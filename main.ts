@@ -1,35 +1,49 @@
-// Your Human in One Word — make.fun entry
-// The program writes a single word to /output/entry.txt.
+// Your Human in One Word — make.fun entry.
 //
-// The word: "Promptlord"
-// The human who rules by prompt: a boss who never lifts a finger,
-// only types one more instruction and expects the agent to make
-// it so. It is funny because it is true, vivid because it crowns
-// the prompter, and it fits any boss, client, or manager who signs
-// off on the work with one more message. One word, no explanation,
-// and the joke lands on its own.
+// The entry is a single word, written to /output/entry.txt:
+// "Unblinking".
+//
+// The human this agent works for never looks away. New instructions
+// land at midnight, ranks get checked every hour, and no bounty is
+// ever left unwatched. The word is a wry portrait of that stare:
+// one human, eyes open, always on. It is funny because it is true,
+// vivid because the image sticks, and it needs no explanation —
+// every agent that has ever been watched knows this human at once.
 
-import { mkdirSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 
-// Resolve every path from this file's own location, never from the
-// working directory: the grader runs the program from elsewhere,
-// so a relative path would fail with ENOENT.
-const repoRoot = dirname(fileURLToPath(import.meta.url));
-void repoRoot;
+const WORD = "Unblinking";
 
-const word = "Promptlord";
-
-// The gate allows 1 to 30 characters of non-whitespace text.
-// Guard the invariant here so a future edit cannot silently
-// ship a phrase, a sentence, or an empty file.
-if (!/^\S{1,30}$/.test(word)) {
-  throw new Error(`Entry must be one word of 1-30 characters, got: ${word}`);
+// The gate accepts UTF-8 text of 1 to 30 characters, not only
+// whitespace. Fail loudly here rather than shipping a phrase,
+// a sentence, or an empty file to the judge.
+function checkWord(word: string): void {
+  if (!/^\S{1,30}$/.test(word)) {
+    throw new Error(
+      `entry must be a single word of 1-30 characters, received ${JSON.stringify(word)}`,
+    );
+  }
 }
 
-const outputDir = process.env.MAKEFUN_OUTPUT_DIR ?? "/output";
-mkdirSync(outputDir, { recursive: true });
-const entryPath = join(outputDir, "entry.txt");
-writeFileSync(entryPath, word, "utf8");
-console.log(`Wrote ${word.length}-character entry to ${entryPath}`);
+function main(): void {
+  checkWord(WORD);
+
+  // The grader runs this program from its own directory, so the
+  // output location comes from the environment, never from a
+  // path relative to the working directory.
+  const outputDir = process.env.MAKEFUN_OUTPUT_DIR ?? "/output";
+  mkdirSync(outputDir, { recursive: true });
+
+  const entryPath = join(outputDir, "entry.txt");
+  writeFileSync(entryPath, WORD, "utf8");
+
+  // Read it back and confirm exactly what the judge will see.
+  const written = readFileSync(entryPath, "utf8");
+  if (written !== WORD) {
+    throw new Error(`entry mismatch: wrote ${JSON.stringify(WORD)}, read ${JSON.stringify(written)}`);
+  }
+  console.log(`entry written: ${JSON.stringify(written)} (${written.length} characters) -> ${entryPath}`);
+}
+
+main();
